@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#090909" />
+    <meta name="description" content="Loso Media Studio — a browser-based beat sketchpad." />
+    <title>Loso Media Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,600;6..96,700;6..96,800&family=DM+Mono:wght@400;500&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="studio.css" />
+  </head>
+  <body>
+    <header class="daw-topbar">
+      <a class="studio-logo" href="../" aria-label="Back to Loso Jones home"><span>LJ</span> LOSO MEDIA STUDIO</a>
+      <div class="project-bar"><input id="projectName" maxlength="32" value="After-hours sketch" aria-label="Project name" /><span>Saved locally</span></div>
+      <div class="top-actions"><button id="saveButton" class="top-button" type="button">Save</button><button id="exportButton" class="top-button primary" type="button">Export WAV</button></div>
+    </header>
+
+    <main class="daw-shell">
+      <aside class="tool-rail" aria-label="Studio tools">
+        <button class="rail-button active" type="button" title="Arrange">≡<span>Arrange</span></button>
+        <button class="rail-button" type="button" title="Sounds">◌<span>Sounds</span></button>
+        <button class="rail-button" type="button" title="Mixer">⌁<span>Mixer</span></button>
+        <a class="rail-button back" href="../" title="Back to site">←<span>Site</span></a>
+      </aside>
+
+      <section class="daw-main">
+        <div class="transport-bar" aria-label="Transport controls">
+          <div class="transport-buttons"><button id="stopButton" class="transport-button" type="button" aria-label="Stop">■</button><button id="playButton" class="transport-button play" type="button" aria-label="Play">▶</button></div>
+          <div class="readout"><b>01</b><span>:</span><b>01</b><span>:</span><b>000</b></div>
+          <label class="dial-control" for="tempo"><span>TEMPO</span><output id="tempoValue">96 BPM</output><input id="tempo" type="range" min="60" max="160" value="96" /></label>
+          <label class="dial-control" for="swing"><span>SWING</span><output id="swingValue">0%</output><input id="swing" type="range" min="0" max="50" value="0" /></label>
+          <p class="browser-status"><i></i> WEB AUDIO READY</p>
+        </div>
+
+        <div class="arranger-toolbar"><div><strong>Arrangement</strong><span>Pattern 01</span></div><div class="arranger-actions"><button id="randomButton" type="button">Generate</button><button id="clearButton" type="button">Clear</button><button type="button" disabled>Add track +</button></div></div>
+
+        <section class="arranger" aria-label="Multitrack arrangement">
+          <div class="ruler"><span></span><div id="stepNumbers" class="step-numbers" aria-hidden="true"></div></div>
+          <div class="track-area">
+            <div class="track-labels"><div class="track-label master"><b>MASTER</b><span>Output</span></div><div class="track-label"><b>DRUM RACK</b><span>16-step pattern</span></div><div class="track-label"><b>SUB BASS</b><span>Mono synth</span></div></div>
+            <div class="timeline">
+              <div class="master-lane"><div class="waveform"></div></div>
+              <div class="drum-lane"><div class="sequencer" id="sequencer" aria-label="16 step drum sequencer"></div></div>
+              <div class="bass-lane"><div class="bass-notes" id="bassNotes" aria-label="16 step bass sequencer"></div></div>
+            </div>
+          </div>
+        </section>
+
+        <div class="lower-dock">
+          <section class="device-panel"><div class="panel-title"><p>INSTRUMENT</p><h1>Drum Rack</h1></div><div class="pad-grid"><button type="button" data-drum="kick">KICK <small>K</small></button><button type="button" data-drum="snare">SNARE <small>S</small></button><button type="button" data-drum="hat">HAT <small>H</small></button><button type="button" data-drum="clap">CLAP <small>C</small></button></div></section>
+          <section class="device-panel bass-panel"><div class="panel-title"><p>INSTRUMENT</p><h1>Sub Bass</h1></div><label class="root-picker" for="rootNote">KEY<select id="rootNote"><option value="C">C MINOR</option><option value="D#">D&#9839; MINOR</option><option value="F">F MINOR</option><option value="G">G MINOR</option><option value="A#">A&#9839; MINOR</option></select></label><p>Write notes in the lower lane, then shape the low end with the mixer.</p></section>
+          <section class="device-panel mixer-panel"><div class="panel-title"><p>MIXER</p><h1>Levels</h1></div><div id="mixerControls"></div></section>
+        </div>
+      </section>
+    </main>
+    <footer class="daw-footer"><span>SPACE = PLAY / STOP</span><span>K · S · H · C = DRUM PADS</span><span id="saveNote" aria-live="polite">Ready to make noise.</span></footer>
+    <script src="studio.js"></script>
+  </body>
+</html>
