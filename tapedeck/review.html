@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Review a Tape — Tape Deck</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="nav wrap">
+<a class="brand" href="index.html">◉ TAPE DECK</a>
+<nav><a href="discover.html">Discover</a><a class="active" href="reviews.html">Reviews</a><a href="artist.html">Artists</a><a href="collaborate.html">Collaborate</a></nav>
+<a class="btn gold" href="drop-a-tape.html">Drop a Tape</a>
+</header>
+<main class="wrap page">
+<div class="eyebrow">Guided Review</div>
+<h1 id="reviewTitle">Review This Tape</h1>
+<p class="lead">Take it one step at a time. Every answer is required because “fire 🔥” is not a critique.</p>
+
+<div class="review-progress"><div class="progress-track"><span id="progressBar"></span></div><div class="progress-meta"><span id="stepLabel">Step 1 of 5</span><span id="completion">0%</span></div></div>
+
+<form id="reviewForm" class="review-wizard">
+<section class="review-step active" data-step="1">
+<div class="step-kicker">01 / First Impression</div>
+<h2>What did you hear?</h2>
+<label>What was the strongest part of the Tape?<textarea required name="strongest" minlength="20" placeholder="Be specific. Mention a section, lyric, melody, performance choice, etc."></textarea></label>
+<label>What emotion or feeling did the Tape create for you?<textarea required name="emotion" minlength="20" placeholder="Explain what created that feeling."></textarea></label>
+<label>What stood out to you most?<textarea required name="stoodOut" minlength="20" placeholder="Tell the artist what grabbed your attention."></textarea></label>
+</section>
+
+<section class="review-step" data-step="2">
+<div class="step-kicker">02 / Craft & Performance</div>
+<h2>How did it work?</h2>
+<label>Songwriting / Composition <input required name="songwriting" type="range" min="1" max="10" value="5" class="score-range"><output data-for="songwriting">5 / 10</output></label>
+<label>Vocal / Instrumental Performance <input required name="performance" type="range" min="1" max="10" value="5" class="score-range"><output data-for="performance">5 / 10</output></label>
+<label>What specifically worked well in the writing or performance?<textarea required name="craftNotes" minlength="20" placeholder="Point to something concrete."></textarea></label>
+</section>
+
+<section class="review-step" data-step="3">
+<div class="step-kicker">03 / Production</div>
+<h2>How does it sound?</h2>
+<label>Production / Mix <input required name="production" type="range" min="1" max="10" value="5" class="score-range"><output data-for="production">5 / 10</output></label>
+<label>Balance / Clarity <input required name="clarity" type="range" min="1" max="10" value="5" class="score-range"><output data-for="clarity">5 / 10</output></label>
+<label>What production element could be improved?<textarea required name="productionNotes" minlength="20" placeholder="Mention the mix, low end, vocals, arrangement, effects, dynamics, etc."></textarea></label>
+</section>
+
+<section class="review-step" data-step="4">
+<div class="step-kicker">04 / Constructive Feedback</div>
+<h2>Help the artist move forward.</h2>
+<label>Biggest improvement area<select required name="improvementArea"><option value="">Choose one</option><option>Songwriting</option><option>Performance</option><option>Vocals</option><option>Production</option><option>Mixing</option><option>Arrangement</option><option>Lyrics</option><option>Structure</option><option>Other</option></select></label>
+<label>What specifically would you change?<textarea required name="change" minlength="25" placeholder="Describe the actual change you would try."></textarea></label>
+<label>Why do you think that change would improve the Tape?<textarea required name="why" minlength="25" placeholder="Explain your reasoning."></textarea></label>
+</section>
+
+<section class="review-step" data-step="5">
+<div class="step-kicker">05 / Final Assessment</div>
+<h2>Leave them with something useful.</h2>
+<label>Would you recommend this Tape?<select required name="recommend"><option value="">Choose one</option><option>Definitely</option><option>Probably</option><option>Maybe</option><option>Probably not</option></select></label>
+<label>Who do you think this Tape would appeal to?<textarea required name="audience" minlength="20" placeholder="Describe the listener, scene, or audience."></textarea></label>
+<label>One actionable piece of advice for the artist<textarea required name="advice" minlength="25" placeholder="Give them one thing they can actually do next."></textarea></label>
+</section>
+
+<div class="wizard-actions">
+<button type="button" class="btn" id="backBtn" hidden>← Back</button>
+<button type="button" class="btn gold" id="nextBtn">Continue →</button>
+<button type="submit" class="btn gold" id="submitBtn" hidden>Submit Review →</button>
+</div>
+<div id="reviewResult" class="success" hidden></div>
+</form>
+</main>
+<footer class="wrap footer"><span>© 2026 <a href="https://losojones.art" target="_blank" rel="noopener">LosoMedia™</a> · Tape Deck</span><span>CREATE • PITCH • REVIEW • COLLABORATE</span></footer>
+<script src="assets/review.js"></script>
+</body>
+</html>
