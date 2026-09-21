@@ -1,3 +1,3 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = { basePath: "/tapedeck-app" };
+const nextConfig = {};
 export default nextConfig;
