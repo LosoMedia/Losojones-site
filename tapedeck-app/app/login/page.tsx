@@ -1,0 +1,6 @@
+"use client";
+import Link from "next/link";
+import { useState } from "react";
+import { supabaseBrowser } from "../../lib/supabase";
+
+export default function Login(){const [email,setEmail]=useState("");const [password,setPassword]=useState("");const [message,setMessage]=useState("");const [busy,setBusy]=useState(false);async function submit(e:React.FormEvent){e.preventDefault();setBusy(true);setMessage("");try{const {error}=await supabaseBrowser().auth.signInWithPassword({email,password});if(error)throw error;window.location.href="/tapedeck-app/dashboard"}catch(err){setMessage(err instanceof Error?err.message:"Unable to sign in.");}finally{setBusy(false)}}return <main className="auth"><Link href="/" className="muted">← Tape Deck</Link><h1>Sign in</h1><p className="muted">Your account is the key to your tapes and review history.</p><form className="form" onSubmit={submit}><label>Email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label><label>Password<input type="password" required value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="btn" disabled={busy}>{busy?"SIGNING IN…":"SIGN IN"}</button>{message&&<div className="notice">{message}</div>}</form><p className="muted">No account? <Link href="/signup">Create one</Link></p></main>}
