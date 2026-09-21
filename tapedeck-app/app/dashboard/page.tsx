@@ -1,0 +1,3 @@
+import Link from "next/link";
+
+export default function Dashboard(){return <main className="auth"><div className="eyebrow">TAPE DECK DASHBOARD</div><h1>Your creative home.</h1><p className="muted">The dashboard shell is ready. Next it will load your profile, tapes, review assignments, reputation and billing from Supabase.</p><div className="grid" style={{padding:"20px 0",gridTemplateColumns:"1fr"}}><div className="card"><h2>My Tapes</h2><p>Create, edit and publish tapes from one account.</p><Link className="btn" href="/review">OPEN REVIEW ENGINE</Link></div><div className="card"><h2>Reviewer Reputation</h2><p>Helpful, constructive reviews will contribute to a separate reviewer reputation score.</p></div></div></main>}
