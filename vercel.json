@@ -1,0 +1,3 @@
+{
+  "buildCommand": "cd tapedeck-app && npm install && npm run build"
+}
