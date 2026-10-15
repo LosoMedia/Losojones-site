@@ -1,0 +1,34 @@
+1. Install packages
+Run this command to install the required dependencies.
+Code:
+File: Code
+```
+npm install @supabase/supabase-js @supabase/ssr
+```
+
+2. Add Supabase Library blocks
+Install Supabase Library blocks via the shadcn registry.
+Details:
+Add UI components for auth, realtime, storage, and more at supabase.com/library.
+Code:
+File: Code
+```
+npx shadcn@latest add @supabase/supabase-client-nextjs
+```
+
+3. Set env variables
+Add the following values to your env file.
+Code:
+File: .env.local
+```
+NEXT_PUBLIC_SUPABASE_URL=https://ifopmneyuzsbfcycjctl.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_95Jv4vL9XjZ7pci4sUv83w_jWUfQDbp
+```
+
+4. Install Agent Skills (optional)
+Agent Skills give AI coding tools ready-made instructions, scripts, and resources for working with Supabase more accurately and efficiently.
+Code:
+File: Code
+```
+npx skills add supabase/agent-skills
+```
