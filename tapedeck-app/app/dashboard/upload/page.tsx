@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseBrowser } from "../../../../lib/supabase";
+import { supabaseBrowser } from "../../../lib/supabase";
 
 export default function UploadTapePage() {
   const router = useRouter();
