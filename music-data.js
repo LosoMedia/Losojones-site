@@ -17,11 +17,24 @@ function renderLosoCatalog() {
   const grid = document.querySelector("#musicCatalog");
   if (!grid) return;
 
+  const leftAt = ["2:47 AM", "3:12 AM", "1:58 AM", "4:03 AM", "2:22 AM", "3:37 AM", "12:49 AM", "2:05 AM", "3:51 AM", "1:33 AM", "4:17 AM", "2:59 AM"];
+
   grid.innerHTML = losoCatalog.map((track, index) => `
     <article class="catalog-card${index === 0 ? " catalog-card-featured" : ""}">
-      <div class="catalog-cover" aria-label="Cover art placeholder for ${track.title}">
-        <span>LOSO<br>JONES</span>
-        <small>${track.title.toUpperCase()}</small>
+      <div class="catalog-cover cv-${(index % 6) + 1}" aria-label="Cassette art for ${track.title}">
+        ${index === 0 ? `<span class="msg-tag"><i></i>NEW MESSAGE</span>` : ""}
+        <div class="cover-label">
+          <div class="cover-top">
+            <span>Side A</span>
+            <span class="cover-time">☎ ${leftAt[index % leftAt.length]}</span>
+          </div>
+          <span class="cover-title">${track.title}</span>
+          <div class="cover-window"><span class="spool"></span><span class="cassette-band"></span><span class="spool"></span></div>
+          <div class="cover-bottom">
+            <span>Msg ${String(index + 1).padStart(2, "0")} / 12</span>
+            <span class="cover-brand">Loso Jones</span>
+          </div>
+        </div>
       </div>
       <div class="catalog-info">
         <p class="catalog-meta">${track.album} · ${track.duration}</p>
