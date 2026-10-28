@@ -13,6 +13,7 @@ export default function Upload() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [genre, setGenre] = useState("");
+  const [tapeType, setTapeType] = useState("");
   const [status, setStatus] = useState("published");
   const [audio, setAudio] = useState<File | null>(null);
   const [artwork, setArtwork] = useState<File | null>(null);
@@ -78,6 +79,7 @@ export default function Upload() {
           title: title.trim(),
           description: description.trim() || null,
           genre: genre.trim() || null,
+          type: tapeType || null,
           status,
           audio_url: audioUrl,
           artwork_url: artworkUrl,
@@ -134,6 +136,15 @@ export default function Upload() {
         <label>
           Description
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this Tape, and what should reviewers listen for?" />
+        </label>
+        <label>
+          Tape type
+          <select required value={tapeType} onChange={(e) => setTapeType(e.target.value)}>
+            <option value="" disabled>Is this tape AI, Organic, or Hybrid?</option>
+            <option value="ai">AI</option>
+            <option value="organic">Organic</option>
+            <option value="hybrid">Hybrid</option>
+          </select>
         </label>
         <label>
           Status

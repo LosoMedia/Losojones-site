@@ -9,8 +9,12 @@ type Tape = {
   description: string | null;
   genre: string | null;
   artwork_url: string | null;
+  plays_count: number | null;
+  type: string | null;
   created_at: string;
 };
+
+const TYPE_LABELS: Record<string, string> = { ai: "AI", organic: "ORGANIC", hybrid: "HYBRID" };
 
 export default function Discover() {
   const [tapes, setTapes] = useState<Tape[]>([]);
@@ -22,7 +26,7 @@ export default function Discover() {
       try {
         const { data, error: fetchError } = await supabaseBrowser()
           .from("tapes")
-          .select("id,title,description,genre,artwork_url,created_at")
+          .select("id,title,description,genre,artwork_url,plays_count,type,created_at")
           .eq("status", "published")
           .order("created_at", { ascending: false });
         if (fetchError) throw fetchError;
@@ -74,6 +78,9 @@ export default function Discover() {
               )}
               <h2>{tape.title}</h2>
               <p className="muted">{tape.genre || "Uncategorized"}</p>
+              <p className="muted">
+                ▶ {tape.plays_count ?? 0} plays{tape.type ? ` · ${TYPE_LABELS[tape.type] ?? tape.type.toUpperCase()}` : ""}
+              </p>
               {tape.description && <p>{tape.description}</p>}
               <Link className="btn" href={`/tape/${tape.id}`}>LISTEN &amp; REVIEW</Link>
             </div>
