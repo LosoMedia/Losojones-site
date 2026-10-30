@@ -35,6 +35,7 @@ export default function RoomPage() {
   const [room, setRoom] = useState<Room | null>(null);
   const [board, setBoard] = useState<BoardEntry[]>([]);
   const [tapeTitles, setTapeTitles] = useState<Record<string, string>>({});
+  const [tapeAudio, setTapeAudio] = useState<Record<string, string>>({});
   const [artistNames, setArtistNames] = useState<Record<string, string>>({});
   const [userId, setUserId] = useState<string | null>(null);
   const [myEntries, setMyEntries] = useState<MyEntry[]>([]);
@@ -77,10 +78,15 @@ export default function RoomPage() {
     if (entries.length > 0) {
       const tapeIds = [...new Set(entries.map((e) => e.tape_id))];
       const artistIds = [...new Set(entries.map((e) => e.artist_id))];
-      const { data: tapesData } = await supabase.from("tapes").select("id,title").in("id", tapeIds);
+      const { data: tapesData } = await supabase.from("tapes").select("id,title,audio_url").in("id", tapeIds);
       const titles: Record<string, string> = {};
-      for (const t of (tapesData ?? []) as { id: string; title: string }[]) titles[t.id] = t.title;
+      const audio: Record<string, string> = {};
+      for (const t of (tapesData ?? []) as { id: string; title: string; audio_url: string | null }[]) {
+        titles[t.id] = t.title;
+        if (t.audio_url) audio[t.id] = t.audio_url;
+      }
       setTapeTitles(titles);
+      setTapeAudio(audio);
       const { data: profilesData } = await supabase.from("profiles").select("id,display_name").in("id", artistIds);
       const names: Record<string, string> = {};
       for (const p of (profilesData ?? []) as { id: string; display_name: string }[]) names[p.id] = p.display_name;
@@ -160,9 +166,23 @@ export default function RoomPage() {
       <div className="step">
         <h2>Now playing</h2>
         {playing ? (
-          <p>
-            <strong>{tapeTitles[playing.tape_id] ?? "Tape"}</strong> — {artistNames[playing.artist_id] ?? "Artist"}
-          </p>
+          <>
+            <p>
+              <strong>{tapeTitles[playing.tape_id] ?? "Tape"}</strong> — {artistNames[playing.artist_id] ?? "Artist"}
+            </p>
+            {tapeAudio[playing.tape_id] && (
+              <>
+                <audio
+                  key={playing.id}
+                  src={tapeAudio[playing.tape_id]}
+                  controls
+                  autoPlay
+                  style={{ width: "100%", marginTop: 12 }}
+                />
+                <p className="muted" style={{ marginTop: 8 }}>Listening in the room — this player follows the board, so it can trail the host by a few seconds. If it doesn&apos;t start on its own, press play.</p>
+              </>
+            )}
+          </>
         ) : (
           <p className="muted">{room?.is_live ? "Nothing on the deck right now — the next draw is coming." : "The show hasn't started. The line is ready when the host goes live."}</p>
         )}
