@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabaseBrowser } from "../../../lib/supabase";
+import DeckPlayer from "../../../components/DeckPlayer";
 
 type Tape = {
   id: string;
@@ -122,9 +123,7 @@ export default function TapePage() {
       </p>
       {tape.description && <p className="muted" style={{ lineHeight: 1.65 }}>{tape.description}</p>}
       {tape.audio_url ? (
-        <audio className="player" controls preload="metadata" src={tape.audio_url}>
-          Your browser does not support audio playback.
-        </audio>
+        <DeckPlayer src={tape.audio_url} title={tape.title} />
       ) : (
         <div className="notice">This tape has no audio file yet.</div>
       )}

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "../../lib/supabase";
+import DeckPlayer from "../../components/DeckPlayer";
 
 type Profile = {
   id: string;
@@ -75,7 +76,6 @@ export default function Console() {
   const [hideQueue, setHideQueue] = useState(false);
 
   // player
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const playedRef = useRef(0);
   const [playedDisplay, setPlayedDisplay] = useState(0);
 
@@ -516,15 +516,13 @@ export default function Console() {
             {nowPlaying.segment === "paid" ? ` · 💵 $${(nowPlaying.amount_cents / 100).toFixed(2)} paid entry` : ""}
           </p>
           {tapes[nowPlaying.tape_id]?.audio_url ? (
-            <audio
+            <DeckPlayer
               key={nowPlaying.id}
-              ref={audioRef}
-              className="player"
-              controls
-              preload="auto"
-              src={tapes[nowPlaying.tape_id]?.audio_url ?? undefined}
-              onTimeUpdate={(e) => {
-                playedRef.current = Math.max(playedRef.current, e.currentTarget.currentTime);
+              src={tapes[nowPlaying.tape_id]?.audio_url ?? ""}
+              title={tapes[nowPlaying.tape_id]?.title}
+              artist={artists[nowPlaying.artist_id]}
+              onTimeUpdate={(t) => {
+                playedRef.current = Math.max(playedRef.current, t);
                 setPlayedDisplay(Math.floor(playedRef.current));
               }}
             />

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabaseBrowser } from "../../../lib/supabase";
+import DeckPlayer from "../../../components/DeckPlayer";
 
 type HostProfile = { id: string; display_name: string; genres: string | null; tiktok_url: string | null; is_host: boolean };
 type Room = { id: string; title: string | null; tiktok_url: string | null; is_live: boolean; hide_queue: boolean };
@@ -186,12 +187,12 @@ export default function RoomPage() {
             </p>
             {tapeAudio[playing.tape_id] && (
               <>
-                <audio
+                <DeckPlayer
                   key={playing.id}
                   src={tapeAudio[playing.tape_id]}
-                  controls
+                  title={tapeTitles[playing.tape_id]}
+                  artist={artistNames[playing.artist_id]}
                   autoPlay
-                  style={{ width: "100%", marginTop: 12 }}
                 />
                 <p className="muted" style={{ marginTop: 8 }}>Listening in the room — this player follows the board, so it can trail the host by a few seconds. If it doesn&apos;t start on its own, press play.</p>
               </>
