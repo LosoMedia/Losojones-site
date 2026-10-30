@@ -182,6 +182,23 @@ export default function Console() {
     setGate("pending");
   }
 
+  async function saveHostProfile() {
+    if (!profile) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    const { error: updateError } = await supabaseBrowser()
+      .from("profiles")
+      .update({ host_bio: appBio.trim() || null, genres: appGenres.trim() || null, tiktok_url: appTiktok.trim() || null })
+      .eq("id", profile.id);
+    setBusy(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setNotice("Host profile saved.");
+  }
+
   async function goLive() {
     if (!profile) return;
     setBusy(true);
@@ -401,6 +418,28 @@ export default function Console() {
           {room?.is_live && (
             <button className="btn secondary" disabled={busy} onClick={goLive}>SAVE SHOW SETTINGS</button>
           )}
+        </p>
+      </div>
+
+      <div className="step">
+        <h2>Your host profile</h2>
+        <p className="muted">What artists see on your public host page and in the directory. (Your per-show TikTok Live link is set in the Go Live card above.)</p>
+        <div className="form">
+          <label>
+            TikTok profile
+            <input value={appTiktok} onChange={(e) => setAppTiktok(e.target.value)} placeholder="https://www.tiktok.com/@you" />
+          </label>
+          <label>
+            Genres
+            <input value={appGenres} onChange={(e) => setAppGenres(e.target.value)} placeholder="Hip-Hop / R&B" />
+          </label>
+          <label>
+            Bio
+            <input value={appBio} onChange={(e) => setAppBio(e.target.value)} placeholder="What your room is about" />
+          </label>
+        </div>
+        <p style={{ marginTop: 14 }}>
+          <button className="btn" disabled={busy} onClick={saveHostProfile}>SAVE HOST PROFILE</button>
         </p>
       </div>
 
