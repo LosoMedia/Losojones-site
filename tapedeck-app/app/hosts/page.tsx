@@ -43,7 +43,7 @@ export default function Hosts() {
         setLiveRooms(roomMap);
 
         const { data: entryData } = await supabase
-          .from("queue_entries")
+          .from("queue_board")
           .select("host_id")
           .in("status", ["queued", "playing", "waiting_on_artist"]);
         const counts: Record<string, number> = {};

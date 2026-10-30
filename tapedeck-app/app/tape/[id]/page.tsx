@@ -62,7 +62,7 @@ export default function TapePage() {
         setTape(data as Tape);
 
         const { data: historyData } = await supabase
-          .from("queue_entries")
+          .from("queue_board")
           .select("id,host_id,played_at,duration_played_seconds")
           .eq("tape_id", id)
           .eq("status", "played")
@@ -71,7 +71,7 @@ export default function TapePage() {
         setPlayHistory(records);
 
         const { data: activeData } = await supabase
-          .from("queue_entries")
+          .from("queue_board")
           .select("host_id")
           .eq("tape_id", id)
           .in("status", ["queued", "playing", "waiting_on_artist"]);

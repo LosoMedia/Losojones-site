@@ -24,6 +24,7 @@ type HostRow = {
   tip_venmo: string | null;
   tip_cashapp: string | null;
   tip_chime: string | null;
+  paypal_email: string | null;
 };
 
 function HostEditor({ host, onChanged }: { host: HostRow; onChanged: () => void }) {
@@ -35,6 +36,7 @@ function HostEditor({ host, onChanged }: { host: HostRow; onChanged: () => void 
   const [tipVenmo, setTipVenmo] = useState(host.tip_venmo ?? "");
   const [tipCashapp, setTipCashapp] = useState(host.tip_cashapp ?? "");
   const [tipChime, setTipChime] = useState(host.tip_chime ?? "");
+  const [paypalEmail, setPaypalEmail] = useState(host.paypal_email ?? "");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -53,6 +55,7 @@ function HostEditor({ host, onChanged }: { host: HostRow; onChanged: () => void 
         tip_venmo: tipVenmo.trim() || null,
         tip_cashapp: tipCashapp.trim() || null,
         tip_chime: tipChime.trim() || null,
+        paypal_email: paypalEmail.trim() || null,
       })
       .eq("id", host.id);
     setBusy(false);
@@ -119,6 +122,10 @@ function HostEditor({ host, onChanged }: { host: HostRow; onChanged: () => void 
           Tip — Chime
           <input value={tipChime} onChange={(e) => setTipChime(e.target.value)} placeholder="$chime-sign" />
         </label>
+        <label>
+          PayPal payout email (paid line)
+          <input value={paypalEmail} onChange={(e) => setPaypalEmail(e.target.value)} placeholder="host@paypal.example" />
+        </label>
       </div>
       {msg && <div className="notice" style={{ marginTop: 12 }}>{msg}</div>}
       <p style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
@@ -167,7 +174,7 @@ export default function Admin() {
     setApplicants((data ?? []) as Applicant[]);
     const { data: hostData } = await supabase
       .from("profiles")
-      .select("id,display_name,is_host,host_status,host_bio,genres,tiktok_url,line_min_cents,tip_paypal,tip_venmo,tip_cashapp,tip_chime")
+      .select("id,display_name,is_host,host_status,host_bio,genres,tiktok_url,line_min_cents,tip_paypal,tip_venmo,tip_cashapp,tip_chime,paypal_email")
       .neq("host_status", "none")
       .order("display_name", { ascending: true });
     setHosts((hostData ?? []) as HostRow[]);

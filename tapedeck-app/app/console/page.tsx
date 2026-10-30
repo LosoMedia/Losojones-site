@@ -12,6 +12,7 @@ type Profile = {
   host_bio: string | null;
   genres: string | null;
   tiktok_url: string | null;
+  paypal_email: string | null;
 };
 
 type Room = { id: string; title: string | null; tiktok_url: string | null; is_live: boolean; hide_queue: boolean };
@@ -20,6 +21,9 @@ type Entry = {
   id: string;
   tape_id: string;
   artist_id: string;
+  segment: string;
+  amount_cents: number;
+  payment_id: string | null;
   status: string;
   checked_in: boolean;
   pinned: boolean;
@@ -63,6 +67,7 @@ export default function Console() {
   const [appBio, setAppBio] = useState("");
   const [appGenres, setAppGenres] = useState("");
   const [appTiktok, setAppTiktok] = useState("");
+  const [appPaypal, setAppPaypal] = useState("");
 
   // live controls
   const [roomTitle, setRoomTitle] = useState("");
@@ -99,7 +104,7 @@ export default function Console() {
 
     const { data: activeData } = await supabase
       .from("queue_entries")
-      .select("id,tape_id,artist_id,status,checked_in,pinned,entered_at,played_at,duration_played_seconds,listener_count,readded_from")
+      .select("id,tape_id,artist_id,segment,amount_cents,payment_id,status,checked_in,pinned,entered_at,played_at,duration_played_seconds,listener_count,readded_from")
       .eq("host_id", hostId)
       .in("status", ACTIVE)
       .order("entered_at", { ascending: true });
@@ -108,7 +113,7 @@ export default function Console() {
 
     const { data: historyData } = await supabase
       .from("queue_entries")
-      .select("id,tape_id,artist_id,status,checked_in,pinned,entered_at,played_at,duration_played_seconds,listener_count,readded_from")
+      .select("id,tape_id,artist_id,segment,amount_cents,payment_id,status,checked_in,pinned,entered_at,played_at,duration_played_seconds,listener_count,readded_from")
       .eq("host_id", hostId)
       .eq("status", "played")
       .order("played_at", { ascending: false })
@@ -142,7 +147,7 @@ export default function Console() {
         }
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
-          .select("id,display_name,is_host,host_status,host_bio,genres,tiktok_url")
+          .select("id,display_name,is_host,host_status,host_bio,genres,tiktok_url,paypal_email")
           .eq("id", userData.user.id)
           .single();
         if (profileError) throw profileError;
@@ -151,6 +156,7 @@ export default function Console() {
         setAppBio(me.host_bio ?? "");
         setAppGenres(me.genres ?? "");
         setAppTiktok(me.tiktok_url ?? "");
+        setAppPaypal(me.paypal_email ?? "");
         if (me.is_host) {
           setGate("console");
           await loadConsole(me.id);
@@ -189,7 +195,7 @@ export default function Console() {
     setNotice("");
     const { error: updateError } = await supabaseBrowser()
       .from("profiles")
-      .update({ host_bio: appBio.trim() || null, genres: appGenres.trim() || null, tiktok_url: appTiktok.trim() || null })
+      .update({ host_bio: appBio.trim() || null, genres: appGenres.trim() || null, tiktok_url: appTiktok.trim() || null, paypal_email: appPaypal.trim() || null })
       .eq("id", profile.id);
     setBusy(false);
     if (updateError) {
@@ -251,11 +257,19 @@ export default function Console() {
     await loadConsole(profile.id);
   }
 
+  // Serve order: a pinned pick first, then the top ready paid entry (highest
+  // amount, first payment wins ties; paid serves regardless of check-in), then
+  // the weighted Random Pool draw among checked-in pool entries. Entries
+  // tagged waiting_on_artist carry that status, so they're never picked here.
   function pickNext(): Entry | null {
     const queued = entries.filter((e) => e.status === "queued");
     const pinned = queued.filter((e) => e.pinned);
     if (pinned.length > 0) return pinned[0];
-    const candidates = queued.filter((e) => e.checked_in);
+    const paid = queued
+      .filter((e) => e.segment === "paid")
+      .sort((a, b) => b.amount_cents - a.amount_cents || new Date(a.entered_at).getTime() - new Date(b.entered_at).getTime());
+    if (paid.length > 0) return paid[0];
+    const candidates = queued.filter((e) => e.segment !== "paid" && e.checked_in);
     if (candidates.length === 0) return null;
     const now = Date.now();
     const weights = candidates.map((e) => 1 + Math.floor((now - new Date(e.entered_at).getTime()) / 60000 / 30));
@@ -272,7 +286,7 @@ export default function Console() {
     setNotice("");
     const next = pickNext();
     if (!next) {
-      setNotice("No checked-in artists in the pool yet — the draw only pulls artists who tapped “I'm here” in the room.");
+      setNotice("Nothing ready to serve — paid entries tagged Waiting on Artist are held back, and the pool draw only pulls artists who tapped “I'm here” in the room.");
       return;
     }
     await patchEntry(next.id, { status: "playing" });
@@ -377,13 +391,59 @@ export default function Console() {
   }
 
   // ---- approved host console ----
-  const sortedEntries = [...entries].sort((a, b) => {
-    const rank = (s: string) => (s === "playing" ? 0 : s === "queued" ? 1 : 2);
-    const diff = rank(a.status) - rank(b.status);
-    if (diff !== 0) return diff;
-    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-    return new Date(a.entered_at).getTime() - new Date(b.entered_at).getTime();
-  });
+  function renderEntryRow(entry: Entry) {
+    return (
+      <div key={entry.id} style={{ borderTop: "1px solid #3a2358", padding: "14px 0" }}>
+        <p style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", margin: 0 }}>
+          <span>
+            {entry.checked_in ? "🟢 " : "⚪ "}
+            <strong>{tapes[entry.tape_id]?.title ?? "Tape"}</strong> — {artists[entry.artist_id] ?? "Artist"}
+            {entry.segment === "paid" ? ` · 💵 $${(entry.amount_cents / 100).toFixed(2)}` : ""}
+            {entry.pinned ? " · 📌 HOST PICK" : ""}
+            {entry.readded_from ? " · ↩ RETURN" : ""}
+          </span>
+          <span className="muted">{entry.status === "waiting_on_artist" ? "WAITING ON ARTIST" : `in line since ${fmtWhen(entry.entered_at)}`}</span>
+        </p>
+        <p style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+          {!nowPlaying && entry.status === "queued" && (
+            <button className="btn" onClick={() => patchEntry(entry.id, { status: "playing" })}>SERVE</button>
+          )}
+          {entry.status === "queued" && (
+            <button className="btn secondary" onClick={() => patchEntry(entry.id, { pinned: !entry.pinned })}>{entry.pinned ? "UNPIN" : "PIN — HOST PICK"}</button>
+          )}
+          {entry.status === "queued" && (
+            <button className="btn secondary" onClick={() => patchEntry(entry.id, { status: "waiting_on_artist" })}>TAG WAITING ON ARTIST</button>
+          )}
+          {entry.status === "waiting_on_artist" && (
+            <button className="btn secondary" onClick={() => patchEntry(entry.id, { status: "queued" })}>UNTAG</button>
+          )}
+          <button className="btn secondary" onClick={() => patchEntry(entry.id, { status: "removed" })}>REMOVE</button>
+        </p>
+      </div>
+    );
+  }
+
+  const lineWaiting = entries.filter((e) => e.status !== "playing");
+  // Paid segment on top: queued by amount (first payment wins ties); entries
+  // tagged Waiting on Artist sink to the bottom of the segment.
+  const paidLine = lineWaiting
+    .filter((e) => e.segment === "paid")
+    .sort((a, b) => {
+      const aw = a.status === "waiting_on_artist" ? 1 : 0;
+      const bw = b.status === "waiting_on_artist" ? 1 : 0;
+      if (aw !== bw) return aw - bw;
+      if (b.amount_cents !== a.amount_cents) return b.amount_cents - a.amount_cents;
+      return new Date(a.entered_at).getTime() - new Date(b.entered_at).getTime();
+    });
+  const poolLine = lineWaiting
+    .filter((e) => e.segment !== "paid")
+    .sort((a, b) => {
+      const rank = (s: string) => (s === "queued" ? 0 : 1);
+      const diff = rank(a.status) - rank(b.status);
+      if (diff !== 0) return diff;
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      return new Date(a.entered_at).getTime() - new Date(b.entered_at).getTime();
+    });
 
   return (
     <main className="review">
@@ -437,7 +497,12 @@ export default function Console() {
             Bio
             <input value={appBio} onChange={(e) => setAppBio(e.target.value)} placeholder="What your room is about" />
           </label>
+          <label>
+            PayPal payout email
+            <input value={appPaypal} onChange={(e) => setAppPaypal(e.target.value)} placeholder="you@paypal.example" />
+          </label>
         </div>
+        <p className="muted" style={{ marginTop: 10 }}>Paid line entries (Skippers &amp; Tippers) are paid straight to this PayPal email — set it before you take paid entries. The platform takes no cut.</p>
         <p style={{ marginTop: 14 }}>
           <button className="btn" disabled={busy} onClick={saveHostProfile}>SAVE HOST PROFILE</button>
         </p>
@@ -448,6 +513,7 @@ export default function Console() {
           <h2>Now playing</h2>
           <p>
             <strong>{tapes[nowPlaying.tape_id]?.title ?? "Tape"}</strong> — {artists[nowPlaying.artist_id] ?? "Artist"}
+            {nowPlaying.segment === "paid" ? ` · 💵 $${(nowPlaying.amount_cents / 100).toFixed(2)} paid entry` : ""}
           </p>
           {tapes[nowPlaying.tape_id]?.audio_url ? (
             <audio
@@ -471,47 +537,33 @@ export default function Console() {
       )}
 
       <div className="step">
-        <h2>Your line ({entries.filter((e) => e.status !== "playing").length} waiting)</h2>
+        <h2>Your line ({lineWaiting.length} waiting)</h2>
         {!nowPlaying && (
           <p style={{ marginBottom: 16 }}>
             <button className="btn" onClick={playNext} disabled={entries.every((e) => e.status !== "queued")}>
-              ▶ PLAY NEXT — PINNED, ELSE RANDOM DRAW
+              ▶ PLAY NEXT — PICK, THEN PAID, THEN THE DRAW
             </button>
           </p>
         )}
-        {sortedEntries.filter((e) => e.status !== "playing").length === 0 ? (
+        {lineWaiting.length === 0 ? (
           <p className="muted">Your line is empty. Share your host page and let artists join the pool.</p>
         ) : (
-          sortedEntries
-            .filter((e) => e.status !== "playing")
-            .map((entry) => (
-              <div key={entry.id} style={{ borderTop: "1px solid #3a2358", padding: "14px 0" }}>
-                <p style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", margin: 0 }}>
-                  <span>
-                    {entry.checked_in ? "🟢 " : "⚪ "}
-                    <strong>{tapes[entry.tape_id]?.title ?? "Tape"}</strong> — {artists[entry.artist_id] ?? "Artist"}
-                    {entry.pinned ? " · 📌 HOST PICK" : ""}
-                    {entry.readded_from ? " · ↩ RETURN" : ""}
-                  </span>
-                  <span className="muted">{entry.status === "waiting_on_artist" ? "WAITING ON ARTIST" : `in line since ${fmtWhen(entry.entered_at)}`}</span>
-                </p>
-                <p style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-                  {!nowPlaying && entry.status === "queued" && (
-                    <button className="btn" onClick={() => patchEntry(entry.id, { status: "playing" })}>SERVE</button>
-                  )}
-                  {entry.status === "queued" && (
-                    <button className="btn secondary" onClick={() => patchEntry(entry.id, { pinned: !entry.pinned })}>{entry.pinned ? "UNPIN" : "PIN — HOST PICK"}</button>
-                  )}
-                  {entry.status === "queued" && (
-                    <button className="btn secondary" onClick={() => patchEntry(entry.id, { status: "waiting_on_artist" })}>TAG WAITING ON ARTIST</button>
-                  )}
-                  {entry.status === "waiting_on_artist" && (
-                    <button className="btn secondary" onClick={() => patchEntry(entry.id, { status: "queued" })}>UNTAG</button>
-                  )}
-                  <button className="btn secondary" onClick={() => patchEntry(entry.id, { status: "removed" })}>REMOVE</button>
-                </p>
-              </div>
-            ))
+          <>
+            {paidLine.length > 0 && (
+              <>
+                <h3 style={{ margin: "6px 0 4px" }}>💵 Skippers &amp; Tippers — paid line</h3>
+                <p className="muted">Amounts are your receipts — artists never see what anyone else paid. Paid entries serve in this order, check-in or not; tag someone Waiting on Artist to hold them at the bottom.</p>
+                {paidLine.map((entry) => renderEntryRow(entry))}
+              </>
+            )}
+            {poolLine.length > 0 && (
+              <>
+                <h3 style={{ margin: "18px 0 4px" }}>🎲 The Random Pool — free</h3>
+                <p className="muted">Served by weighted draw among checked-in artists; a pin jumps the pool only, never the paid line.</p>
+                {poolLine.map((entry) => renderEntryRow(entry))}
+              </>
+            )}
+          </>
         )}
       </div>
 
@@ -524,7 +576,7 @@ export default function Console() {
             <p key={entry.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
               <span>
                 <strong>{tapes[entry.tape_id]?.title ?? "Tape"}</strong> — {artists[entry.artist_id] ?? "Artist"}
-                <span className="muted"> · played {fmtWhen(entry.played_at)} · heard {fmtDuration(entry.duration_played_seconds)} · {entry.listener_count ?? 0} listeners</span>
+                <span className="muted"> · played {fmtWhen(entry.played_at)} · heard {fmtDuration(entry.duration_played_seconds)} · {entry.listener_count ?? 0} listeners{entry.segment === "paid" ? ` · 💵 $${(entry.amount_cents / 100).toFixed(2)} received` : ""}</span>
               </span>
               <button
                 className="btn secondary"

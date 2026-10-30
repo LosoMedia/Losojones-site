@@ -11,21 +11,23 @@ type BoardEntry = {
   id: string;
   tape_id: string;
   artist_id: string;
+  segment: string;
   status: string;
   checked_in: boolean;
   pinned: boolean;
   entered_at: string;
   readded_from: string | null;
+  paid_rank: number | null;
 };
 
-type MyEntry = { id: string; tape_id: string; status: string; checked_in: boolean };
+type MyEntry = { id: string; tape_id: string; segment: string; status: string; checked_in: boolean };
 
 const ACTIVE = ["queued", "playing", "waiting_on_artist"];
 
-function statusLabel(status: string) {
+function statusLabel(status: string, segment?: string) {
   if (status === "playing") return "NOW PLAYING";
   if (status === "waiting_on_artist") return "WAITING ON ARTIST";
-  return "IN THE POOL";
+  return segment === "paid" ? "PAID LINE" : "IN THE POOL";
 }
 
 export default function RoomPage() {
@@ -68,7 +70,7 @@ export default function RoomPage() {
 
     const { data: boardData } = await supabase
       .from("queue_board")
-      .select("id,tape_id,artist_id,status,checked_in,pinned,entered_at,readded_from")
+      .select("id,tape_id,artist_id,segment,status,checked_in,pinned,entered_at,readded_from,paid_rank")
       .eq("host_id", id)
       .in("status", ACTIVE)
       .order("entered_at", { ascending: true });
@@ -96,7 +98,7 @@ export default function RoomPage() {
     if (me) {
       const { data: mineData } = await supabase
         .from("queue_entries")
-        .select("id,tape_id,status,checked_in")
+        .select("id,tape_id,segment,status,checked_in")
         .eq("host_id", id)
         .eq("artist_id", me)
         .in("status", ACTIVE);
@@ -149,6 +151,18 @@ export default function RoomPage() {
   const playing = board.find((e) => e.status === "playing");
   const isHostViewer = userId === host.id;
   const boardHidden = room?.hide_queue && !isHostViewer;
+  // Paid segment on top in exact paid_rank order (amounts never shown here);
+  // paid entries tagged Waiting on Artist sink to the bottom of the segment.
+  const paidEntries = board
+    .filter((e) => e.segment === "paid" && e.status !== "playing")
+    .sort((a, b) => {
+      const aw = a.status === "waiting_on_artist" ? 1 : 0;
+      const bw = b.status === "waiting_on_artist" ? 1 : 0;
+      if (aw !== bw) return aw - bw;
+      return (a.paid_rank ?? 999) - (b.paid_rank ?? 999);
+    });
+  const poolEntries = board.filter((e) => e.segment !== "paid" && e.status !== "playing");
+  const myPaidRank = (entryId: string) => board.find((e) => e.id === entryId)?.paid_rank ?? null;
 
   return (
     <main className="review">
@@ -194,7 +208,7 @@ export default function RoomPage() {
           {myEntries.map((entry) => (
             <p key={entry.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
               <span>
-                {tapeTitles[entry.tape_id] ?? "Your tape"} — <span className="muted">{statusLabel(entry.status)}</span>
+                {tapeTitles[entry.tape_id] ?? "Your tape"} — <span className="muted">{statusLabel(entry.status, entry.segment)}{entry.segment === "paid" && myPaidRank(entry.id) ? ` · position #${myPaidRank(entry.id)}` : ""}</span>
                 {entry.checked_in ? " · 🟢 you're checked in" : " · ⚪ not checked in"}
               </span>
               {entry.status !== "playing" && (
@@ -215,9 +229,25 @@ export default function RoomPage() {
         ) : board.length === 0 ? (
           <p className="muted">The line is empty.</p>
         ) : (
-          board
-            .filter((e) => e.status !== "playing")
-            .map((entry) => (
+          <>
+            {paidEntries.length > 0 && (
+              <>
+                <p className="muted">💵 SKIPPERS &amp; TIPPERS — paid line, in serve order.</p>
+                {paidEntries.map((entry) => (
+                  <p key={entry.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                    <span>
+                      {entry.status !== "waiting_on_artist" && entry.paid_rank ? <strong>#{entry.paid_rank} </strong> : ""}
+                      {entry.checked_in ? "🟢 " : "⚪ "}
+                      {tapeTitles[entry.tape_id] ?? "Tape"} — {artistNames[entry.artist_id] ?? "Artist"}
+                      {entry.pinned ? " · 📌 HOST PICK" : ""}
+                    </span>
+                    <span className="muted">{statusLabel(entry.status, entry.segment)}</span>
+                  </p>
+                ))}
+                <p className="muted" style={{ marginTop: 10 }}>🎲 THE RANDOM POOL</p>
+              </>
+            )}
+            {poolEntries.map((entry) => (
               <p key={entry.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <span>
                   {entry.checked_in ? "🟢 " : "⚪ "}
@@ -225,9 +255,10 @@ export default function RoomPage() {
                   {entry.pinned ? " · 📌 HOST PICK" : ""}
                   {entry.readded_from ? " · ↩ BACK IN ROTATION" : ""}
                 </span>
-                <span className="muted">{statusLabel(entry.status)}</span>
+                <span className="muted">{statusLabel(entry.status, entry.segment)}</span>
               </p>
-            ))
+            ))}
+          </>
         )}
         {!userId && <p className="muted" style={{ marginTop: 12 }}><Link href="/login" style={{ textDecoration: "underline" }}>Sign in</Link> to join this line with your own tape.</p>}
       </div>
